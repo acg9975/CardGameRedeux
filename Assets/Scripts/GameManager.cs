@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
@@ -8,12 +9,16 @@ public class GameManager : MonoBehaviour
     private GameObject card;
 
     [SerializeField]
-    private Transform deck, playerCards, AICards;
+    private Transform deck, playerCardsTransform, AICards;
+
+    [SerializeField]
+    private Transform garbagePile;
 
     //List has to be public for interaction
     public List<GameObject> cardsList;
     public List<GameObject> playerList;
     public List<GameObject> aiList;
+    public List<GameObject> garbageList;
 
     [SerializeField][Tooltip("This has to be a multiple of 3")]
     private int totalCards = 60;
@@ -27,11 +32,39 @@ public class GameManager : MonoBehaviour
 
     int handSize = 3;
 
-    private Transform prevCard;
-    [SerializeField]
+    private Transform deckPrevCard;
+    [SerializeField][Tooltip("Used in positioning the cards in a deck")]
     float padding = 5;
 
-    // Start is called before the first frame update
+    [SerializeField][Tooltip("Used in positioning the card's x and y in a deck")]
+    private float lrPadding = 0.01f;
+
+    //phases: 0 - create cards 
+    //phase 1: serve cards to both players
+    //phase 2: AI chooses random card - it rises slightly
+    //phase 3: allow player to choose card - this is where the normal game begins after start sequence
+    //phase 4: check winner - do pause and add points
+    //phase 5: move cards in both lists to trash
+    //phase 6: if deck is empty move everything from trash pile to the deck again
+    //Restart from phase 1
+
+
+    [SerializeField]
+    private float dramaticPauseTime = 2f;
+
+    private bool allowedToClick = false;
+
+    private GameObject PlayerShowdownCard;
+    private GameObject AIShowdownCard;
+
+    private int playerPoints = 0;
+    private int AIPoints = 0;
+
+    public TextMeshProUGUI pScoreText;
+    public TextMeshProUGUI aiScoreText;
+
+    public Transform aiShowdownTransform;
+
     void Start()
     {
         rockRemaining = totalCards / 3;
@@ -48,7 +81,7 @@ public class GameManager : MonoBehaviour
         CreateCardsSequence();//card gen sequence
 
         //organize the cards into their right spots
-        //serveCards();
+        serveCards();
     }
 
     void CreateCardsSequence()
@@ -117,7 +150,7 @@ public class GameManager : MonoBehaviour
     private void createCard(string type)
     {
         //we need to instantiate at the previous card's location
-        if (prevCard == null)
+        if (deckPrevCard == null)
         {
             GameObject cardObject = Instantiate(card, deck.position, Quaternion.identity);
             Card cScript = cardObject.GetComponent<Card>();
@@ -126,11 +159,11 @@ public class GameManager : MonoBehaviour
             
             cardObject.transform.parent = deck;
 
-            prevCard = cardObject.transform;
+            deckPrevCard = cardObject.transform;
         }
         else
         {
-            float newY = prevCard.position.y + padding;
+            float newY = deckPrevCard.position.y + padding;
             Vector3 cardPos = new Vector3(deck.position.x,newY, deck.position.z);
 
             GameObject cardObject = Instantiate(card, cardPos, Quaternion.identity);
@@ -140,7 +173,7 @@ public class GameManager : MonoBehaviour
 
             cardObject.transform.parent = deck;
             
-            prevCard = cardObject.transform;
+            deckPrevCard = cardObject.transform;
         }
 
 
@@ -148,19 +181,17 @@ public class GameManager : MonoBehaviour
         if (type == r)
         {
             rockRemaining--;
-            Debug.Log("rock remaining: " + rockRemaining);
-
+            //Debug.Log("rock remaining: " + rockRemaining);
         }
         else if (type == p)
         {
             paperRemaining--;
-            Debug.Log("Papers remaining: " + paperRemaining);
-
+            //Debug.Log("Papers remaining: " + paperRemaining);
         }
         else
         {
             scissorsRemaining--;
-            Debug.Log("Scissors remaining: " + scissorsRemaining);
+            //Debug.Log("Scissors remaining: " + scissorsRemaining);
         }
 
     }
@@ -169,18 +200,268 @@ public class GameManager : MonoBehaviour
     {
         //take top 3 cards, give to AI, take next 3 and give to player
 
-        for (int i = 0; i < handSize; i++)
+        //can use a coroutine for this 
+        for (int i = 1; i <= handSize; i++)
         {
             int lastnum = cardsList.Count;
-            GameObject cardObject = cardsList[lastnum - 1];
+            GameObject cardObject = cardsList[lastnum - i];
             aiList.Add(cardObject);
+            cardsList.Remove(cardObject);
             Card cScript = cardObject.GetComponent<Card>();
-            float cardPosX = AICards.position.x + (cScript.getWidth() * i) + 20;
+
+            //essentaily want to position objects like this - at the parent position, with the sprite's width (allowing for the determination of the amount of cards) and some padding between them
+            float cardPosX = AICards.position.x + (i * cScript.getWidth()) + padding;
             cardObject.transform.position = new Vector3(cardPosX, AICards.position.y,AICards.position.z);
+
+            //change parent
+            cardObject.transform.parent = AICards;
+            Debug.Log(i);
+
+        }
+        
+        for (int i = 1; i <= handSize; i++)
+        {
+            int lastnum = cardsList.Count;
+            GameObject cardObject = cardsList[lastnum - i];
+            playerList.Add(cardObject);
+            cardsList.Remove(cardObject);
+
+            Card cScript = cardObject.GetComponent<Card>();
+
+            //essentaily want to position objects like this - at the parent position, with the sprite's width (allowing for the determination of the amount of cards) and some padding between them
+            float cardPosX = playerCardsTransform.position.x + (i * cScript.getWidth()) + padding;
+            cardObject.transform.position = new Vector3(cardPosX, playerCardsTransform.position.y, playerCardsTransform.position.z);
+
+            //change parent
+            cardObject.transform.parent = playerCardsTransform;
+            Debug.Log(i);
 
         }
 
+        //after both players have their cards in hand, let AI choose 
+        AIChoose();
 
+    }
+
+    private void AIChoose()
+    {
+        //get the aiList and choose a random item. Then move that card down. move to next phase
+        int rNum = Random.Range(0,4);
+
+        GameObject aiChosenCard = aiList[rNum];
+        aiChosenCard.transform.position = new Vector3(aiChosenCard.transform.position.x, aiChosenCard.transform.position.y - 2, aiChosenCard.transform.position.z);
+
+        AIShowdownCard = aiChosenCard;
+
+    }
+
+    private void playerChoose()
+    {
+        for (int i = 0; i < playerList.Count; i++)
+        {
+            Card cardInHand = playerList[i].gameObject.GetComponent<Card>();
+            cardInHand.setFlipped(true);
+            cardInHand.setChooseable(true);
+        }
+
+        //We go through a list of player's cards, then we allow them to be chosen and flipped in the card script
+
+
+        //have that card slightly raise up
+        //check what card the player clicks on 
+        
+
+    }
+
+
+
+    private void Update()
+    {
+
+        
+    }
+
+    public int getHandSize()
+    {
+        return handSize;
+    }
+
+    public void getPlayerCardChosen(GameObject cardChosen)
+    {
+        //set card to the player's chosen card
+        PlayerShowdownCard = cardChosen;
+
+        //set chooseable to false for each card
+        for (int i = 0; i < handSize; i++)
+        {
+            Card cardInHand = playerList[i].gameObject.GetComponent<Card>();
+            cardInHand.setChooseable(false);
+        }
+
+        //once this has been called, the player's card is chosen so move on to next step
+        checkWinnerPhaseOne();
+
+    }
+    private void checkWinnerPhaseOne()
+    {
+        //move AI card forward
+        AIShowdownCard.transform.position = aiShowdownTransform.position;
+
+        //do dramatic pause
+        StartCoroutine(pause());
+
+
+    }
+
+    private IEnumerator pause()
+    {
+
+        yield return new WaitForSeconds(dramaticPauseTime);
+        checkWinnderPhaseTwo();
+
+    }
+
+    private void checkWinnderPhaseTwo()
+    {
+        //flip the AI card
+        AIShowdownCard.gameObject.GetComponent<Card>().setFlipped(true);
+
+        //compare values of both showdown cards
+        //reward points
+        string pCard = PlayerShowdownCard.gameObject.GetComponent<Card>().getCardType();
+        string aiCard = AIShowdownCard.gameObject.GetComponent<Card>().getCardType();
+        
+        if (pCard == r)
+        {
+            if (aiCard == r)
+            {
+                dramaticPauseReset();
+            }
+            else if (aiCard == p)
+            {
+                AIPoints++;
+                dramaticPauseReset();
+            }
+            else if (aiCard == s)
+            {
+                playerPoints++;
+                dramaticPauseReset();
+            }
+
+        }
+        else if (pCard == p)
+        {
+            if (aiCard == r)
+            {
+                AIPoints++;
+                dramaticPauseReset();
+            }
+            else if (aiCard == p)
+            {
+                dramaticPauseReset();
+            }
+            else if (aiCard == s)
+            {
+                playerPoints++;
+                dramaticPauseReset();
+            }
+        }
+        else if (pCard == s)
+        {
+            if (aiCard == r)
+            {
+                AIPoints++;
+                dramaticPauseReset();
+            }
+            else if (aiCard == p)
+            {
+                playerPoints++;
+                dramaticPauseReset();
+            }
+            else if (aiCard == s)
+            {
+                dramaticPauseReset();
+            }
+        }
+    }
+
+    IEnumerator dramaticPauseReset()
+    {
+        yield return new WaitForSeconds(1f);
+        resetPhases();
+    }
+
+    void resetPhases()
+    {
+        //reset showdown cards 
+        AIShowdownCard = null;
+        PlayerShowdownCard = null;
+
+        //Move cards to garbage deck at position similar to regular deck
+        //if garbage list is empty, then its equal to null. if it is not, then get the thing off the top
+        Transform prevCard = null;
+        if (garbageList.Count < 0)
+        {
+            prevCard = null;
+        }
+        else
+        {
+            //this may cause problems 
+            prevCard = garbageList[garbageList.Count].transform;
+        }
+
+
+        for (int i = 0; i < handSize; i++)
+        {
+            GameObject currentCard = aiList[0];
+            aiList.Remove(currentCard);
+            garbageList.Add(currentCard);
+
+            currentCard.transform.parent = garbagePile;
+
+            if (prevCard == null)
+            {
+                currentCard.transform.position = garbagePile.position;
+                prevCard = currentCard.transform;
+            }
+            else
+            {
+                float newPosY = prevCard.position.y + padding;
+                currentCard.transform.position = new Vector3(garbagePile.position.x, newPosY, garbagePile.position.z);
+                prevCard = currentCard.transform;
+            }
+
+        }
+
+        //check the amount of cards left in the deck
+        //if there are less than 6 cards then move the cards from the garbage pile to the regular deck
+        if (cardsList.Count < 6)
+        {
+            Transform prevDeckCard = null;
+            for (int i = 0; i < garbageList.Count-1; i++)
+            {
+                GameObject cCard = garbageList[i];
+                cardsList.Add(cCard);
+                garbageList.Remove(cCard);
+                cCard.transform.parent = deck;
+
+                if (prevDeckCard == null)
+                {
+                    prevDeckCard = cCard.transform;
+                    cCard.transform.position = deck.position;
+                    
+                }
+                else
+                {
+                    float newPosY = prevDeckCard.position.y + padding;
+                    cCard.transform.position = new Vector3(deck.position.x, newPosY, deck.position.z);
+                    prevDeckCard = cCard.transform;
+                }
+            }
+        }
+
+        //serve cards
+        serveCards();
     }
 
 }

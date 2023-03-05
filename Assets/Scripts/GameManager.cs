@@ -30,14 +30,16 @@ public class GameManager : MonoBehaviour
     private string p = "Paper";
     private string r = "Rock";
 
+    Transform prevCard = null;
+
     int handSize = 3;
 
     private Transform deckPrevCard;
     [SerializeField][Tooltip("Used in positioning the cards in a deck")]
     float padding = 5;
 
-    [SerializeField][Tooltip("Used in positioning the card's x and y in a deck")]
-    private float lrPadding = 0.01f;
+    //[SerializeField][Tooltip("Used in positioning the card's x and y in a deck")]
+    //private float lrPadding = 0.01f;
 
     //phases: 0 - create cards 
     //phase 1: serve cards to both players
@@ -52,7 +54,7 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     private float dramaticPauseTime = 2f;
 
-    private bool allowedToClick = false;
+    //private bool allowedToClick = false;
 
     private GameObject PlayerShowdownCard;
     private GameObject AIShowdownCard;
@@ -205,8 +207,7 @@ public class GameManager : MonoBehaviour
         {
             int lastnum = cardsList.Count;
             GameObject cardObject = cardsList[lastnum - i];
-            aiList.Add(cardObject);
-            cardsList.Remove(cardObject);
+
             Card cScript = cardObject.GetComponent<Card>();
 
             //essentaily want to position objects like this - at the parent position, with the sprite's width (allowing for the determination of the amount of cards) and some padding between them
@@ -215,8 +216,9 @@ public class GameManager : MonoBehaviour
 
             //change parent
             cardObject.transform.parent = AICards;
-            Debug.Log(i);
-
+            //Debug.Log(i);
+            aiList.Add(cardObject);
+            cardsList.Remove(cardObject);
         }
         
         for (int i = 1; i <= handSize; i++)
@@ -234,7 +236,6 @@ public class GameManager : MonoBehaviour
 
             //change parent
             cardObject.transform.parent = playerCardsTransform;
-            Debug.Log(i);
 
         }
 
@@ -246,13 +247,13 @@ public class GameManager : MonoBehaviour
     private void AIChoose()
     {
         //get the aiList and choose a random item. Then move that card down. move to next phase
-        int rNum = Random.Range(0,4);
+        int rNum = Random.Range(1,4);
 
-        GameObject aiChosenCard = aiList[rNum];
+        GameObject aiChosenCard = aiList[rNum - 1];
         aiChosenCard.transform.position = new Vector3(aiChosenCard.transform.position.x, aiChosenCard.transform.position.y - 2, aiChosenCard.transform.position.z);
 
         AIShowdownCard = aiChosenCard;
-
+        playerChoose();
     }
 
     private void playerChoose()
@@ -262,6 +263,7 @@ public class GameManager : MonoBehaviour
             Card cardInHand = playerList[i].gameObject.GetComponent<Card>();
             cardInHand.setFlipped(true);
             cardInHand.setChooseable(true);
+            Debug.Log(cardInHand + " player list found");
         }
 
         //We go through a list of player's cards, then we allow them to be chosen and flipped in the card script
@@ -275,12 +277,6 @@ public class GameManager : MonoBehaviour
 
 
 
-    private void Update()
-    {
-
-        
-    }
-
     public int getHandSize()
     {
         return handSize;
@@ -292,16 +288,23 @@ public class GameManager : MonoBehaviour
         PlayerShowdownCard = cardChosen;
 
         //set chooseable to false for each card
-        for (int i = 0; i < handSize; i++)
+        for (int i = 0; i < playerList.Count; i++)
         {
             Card cardInHand = playerList[i].gameObject.GetComponent<Card>();
             cardInHand.setChooseable(false);
         }
 
         //once this has been called, the player's card is chosen so move on to next step
-        checkWinnerPhaseOne();
+        StartCoroutine(checkWinnerPhaseOnePause());
 
     }
+
+    IEnumerator checkWinnerPhaseOnePause()
+    {
+        yield return new WaitForSeconds(1f);
+        checkWinnerPhaseOne();
+    }
+
     private void checkWinnerPhaseOne()
     {
         //move AI card forward
@@ -309,8 +312,6 @@ public class GameManager : MonoBehaviour
 
         //do dramatic pause
         StartCoroutine(pause());
-
-
     }
 
     private IEnumerator pause()
@@ -323,64 +324,93 @@ public class GameManager : MonoBehaviour
 
     private void checkWinnderPhaseTwo()
     {
+        Debug.Log("Check winner phase 2");
+
         //flip the AI card
         AIShowdownCard.gameObject.GetComponent<Card>().setFlipped(true);
+
+        //THIS SECTION
+        for (int i = 0; i < aiList.Count; i++)
+        {
+            aiList[i].transform.name = playerList[i].transform.name + i ;
+
+        }
 
         //compare values of both showdown cards
         //reward points
         string pCard = PlayerShowdownCard.gameObject.GetComponent<Card>().getCardType();
         string aiCard = AIShowdownCard.gameObject.GetComponent<Card>().getCardType();
-        
-        if (pCard == r)
+
+        Debug.Log( "AI CARD : "+ aiCard);
+        if (pCard == "Rock")
         {
-            if (aiCard == r)
+            if (aiCard == "Rock")
             {
-                dramaticPauseReset();
+                Debug.Log(aiCard);
+                resetPhases();
+                //StartCoroutine(dramaticPauseReset());
             }
-            else if (aiCard == p)
+            else if (aiCard == "Paper")
             {
+                Debug.Log(aiCard);
                 AIPoints++;
-                dramaticPauseReset();
+                resetPhases();
+                //StartCoroutine(dramaticPauseReset());
             }
-            else if (aiCard == s)
+            else if (aiCard == "Scissors")
             {
+                Debug.Log(aiCard);
                 playerPoints++;
-                dramaticPauseReset();
+                resetPhases();
+                //StartCoroutine(dramaticPauseReset());
             }
 
         }
-        else if (pCard == p)
+        else if (pCard == "Paper")
         {
-            if (aiCard == r)
+            if (aiCard == "Rock")
             {
+                Debug.Log(aiCard);
                 AIPoints++;
-                dramaticPauseReset();
+                resetPhases();
+                //StartCoroutine(dramaticPauseReset());
             }
-            else if (aiCard == p)
+            else if (aiCard == "Paper")
             {
-                dramaticPauseReset();
+                Debug.Log(aiCard);
+                resetPhases();
+                //StartCoroutine(dramaticPauseReset());
             }
-            else if (aiCard == s)
+            else if (aiCard == "Scissors")
             {
+                Debug.Log(aiCard);
                 playerPoints++;
-                dramaticPauseReset();
+                resetPhases();
+                //StartCoroutine(dramaticPauseReset());
             }
         }
-        else if (pCard == s)
+        else if (pCard == "Scissors")
         {
-            if (aiCard == r)
+            if (aiCard == "Rock")
             {
+                Debug.Log(aiCard);
                 AIPoints++;
-                dramaticPauseReset();
+                resetPhases();
+//                StartCoroutine(dramaticPauseReset());
             }
-            else if (aiCard == p)
+            else if (aiCard == "Rock")
             {
+                Debug.Log(aiCard);
                 playerPoints++;
-                dramaticPauseReset();
+                resetPhases();
+
+                //StartCoroutine(dramaticPauseReset());
             }
-            else if (aiCard == s)
+            else if (aiCard == "Scissors")
             {
-                dramaticPauseReset();
+                Debug.Log(aiCard);
+                resetPhases();
+                //StartCoroutine(dramaticPauseReset());
             }
         }
     }
@@ -389,33 +419,65 @@ public class GameManager : MonoBehaviour
     {
         yield return new WaitForSeconds(1f);
         resetPhases();
+        Debug.Log("dramatic pause reset");
     }
 
     void resetPhases()
     {
         //reset showdown cards 
+
+        Debug.Log(AIShowdownCard.transform.name  + " AI Showdown Card anme");
+        Debug.Log(PlayerShowdownCard.transform.name + " player Showdown Card anme");
+
         AIShowdownCard = null;
         PlayerShowdownCard = null;
 
         //Move cards to garbage deck at position similar to regular deck
         //if garbage list is empty, then its equal to null. if it is not, then get the thing off the top
-        Transform prevCard = null;
-        if (garbageList.Count < 0)
+        //Transform prevCard = null;
+
+
+        if (garbageList.Count == 0)
         {
             prevCard = null;
+            Debug.Log("Prev card is null");
         }
         else
         {
-            //this may cause problems 
-            prevCard = garbageList[garbageList.Count].transform;
+            //this may cause problems
+            if (garbageList.Count > 1)
+            {
+                prevCard = garbageList[garbageList.Count - 1].transform;
+                Debug.Log("Prev Card is " + prevCard.transform.name);
+            }
         }
 
 
-        for (int i = 0; i < handSize; i++)
+        for (int i = 1; i <= aiList.Count; i++)
         {
-            GameObject currentCard = aiList[0];
-            aiList.Remove(currentCard);
-            garbageList.Add(currentCard);
+            int lastnum = aiList.Count;
+            GameObject currentCard = aiList[lastnum - i];
+
+            currentCard.transform.parent = garbagePile;
+
+            if (prevCard == null)
+            {
+                currentCard.transform.position = garbagePile.position;
+                prevCard = currentCard.transform;
+            }
+            else
+            {
+                float newPosY = prevCard.position.y + padding;
+                currentCard.transform.position = new Vector3(garbagePile.position.x, newPosY, garbagePile.position.z);
+                prevCard = currentCard.transform;
+            }
+        }
+
+        for (int i = 1; i <= playerList.Count; i++)
+        {
+            int lastnum = playerList.Count;
+
+            GameObject currentCard = playerList[lastnum - i];
 
             currentCard.transform.parent = garbagePile;
 
@@ -431,6 +493,25 @@ public class GameManager : MonoBehaviour
                 prevCard = currentCard.transform;
             }
 
+        }
+
+        //remove cards in this for loop
+        for (int i = 1; i <= playerList.Count; i++)
+        {
+            int lastnum = playerList.Count;
+            GameObject currentCard = playerList[lastnum - i];
+            playerList.Remove(currentCard);
+            garbageList.Add(currentCard);
+        }
+        Debug.Log(aiList.Count + " AI LIST COUNT");
+
+        for (int i = 1; i <= aiList.Count; i++)
+        {
+            int lastnum = aiList.Count;
+            GameObject currentCard = aiList[lastnum - i];
+            aiList.Remove(currentCard);
+            garbageList.Add(currentCard);
+            Debug.Log("Current Card AI Removed" + (lastnum - i));
         }
 
         //check the amount of cards left in the deck

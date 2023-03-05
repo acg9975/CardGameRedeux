@@ -11,6 +11,7 @@ public class Card : MonoBehaviour
 
     public Sprite s_Scissors, s_Paper, s_Rock;
 
+    public Sprite faceSprite, backSprite;
 
     string cardType = "";
 
@@ -28,6 +29,7 @@ public class Card : MonoBehaviour
     {
         sr = gameObject.GetComponent<SpriteRenderer>();
         gm = GameObject.Find("Game Manager").GetComponent<GameManager>();
+        sr.sprite = backSprite;
     }
 
     public void setType(string type)
@@ -37,22 +39,35 @@ public class Card : MonoBehaviour
 
         if (type == s)
         {
-            sr.color = Color.blue;
+            faceSprite = s_Scissors;
+
         }
         else if(type == r)
         {
-            sr.color = Color.red;
+            faceSprite = s_Rock;
+
         }
         else if(type == p)
         {
-            sr.color = Color.green;
+            faceSprite = s_Paper;
         }
+
 
     }
 
     public void setFlipped(bool val)
     {
         flipped = val;
+
+        //if flipped, turn to face card, if not then turn to backside
+        if (val)
+        {
+            sr.sprite = faceSprite;
+        }
+        else
+        {
+            sr.sprite = backSprite;
+        }
     }
 
 
@@ -64,6 +79,7 @@ public class Card : MonoBehaviour
     public void setChooseable(bool val)
     {
         chooseable = val;
+        //Debug.Log("Set as chooseable");
     }
 
     public string getCardType()
@@ -78,17 +94,8 @@ public class Card : MonoBehaviour
             gameObject.transform.position = GameObject.Find("Player Standoff").transform.position;
             //remove ability to choose from player
             gm.getPlayerCardChosen(gameObject);
-
             Debug.Log("Player chose a card of type: " + cardType);
-
         }
     }
-
-    private void OnMouseEnter()
-    {
-        Debug.Log("Entered card:" + cardType);
-    }
-
-
 
 }

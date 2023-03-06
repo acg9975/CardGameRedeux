@@ -433,9 +433,9 @@ public class GameManager : MonoBehaviour
     void resetPhases()
     {
         //add points
-        aiScoreText.text = AIPoints.ToString();
-        pScoreText.text = playerPoints.ToString();
-
+        aiScoreText.SetText(AIPoints.ToString());
+        pScoreText.SetText(playerPoints.ToString());
+        
 
         //reset showdown cards 
 

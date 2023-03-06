@@ -263,7 +263,7 @@ public class GameManager : MonoBehaviour
             Card cardInHand = playerList[i].gameObject.GetComponent<Card>();
             cardInHand.setFlipped(true);
             cardInHand.setChooseable(true);
-            Debug.Log(cardInHand + " player list found");
+            //Debug.Log(cardInHand + " player list found");
         }
 
         //We go through a list of player's cards, then we allow them to be chosen and flipped in the card script
@@ -329,40 +329,45 @@ public class GameManager : MonoBehaviour
         //flip the AI card
         AIShowdownCard.gameObject.GetComponent<Card>().setFlipped(true);
 
-        //THIS SECTION
+        //THIS SECTION for testing
+        /*
         for (int i = 0; i < aiList.Count; i++)
         {
             aiList[i].transform.name = playerList[i].transform.name + i ;
 
         }
+        */
+
 
         //compare values of both showdown cards
         //reward points
         string pCard = PlayerShowdownCard.gameObject.GetComponent<Card>().getCardType();
         string aiCard = AIShowdownCard.gameObject.GetComponent<Card>().getCardType();
 
-        Debug.Log( "AI CARD : "+ aiCard);
+        AIShowdownCard.gameObject.GetComponent<Card>().setFlipped(true);
+
+        Debug.Log("Cards flipped");
         if (pCard == "Rock")
         {
             if (aiCard == "Rock")
             {
                 Debug.Log(aiCard);
-                resetPhases();
-                //StartCoroutine(dramaticPauseReset());
+                //resetPhases();
+                StartCoroutine(dramaticPauseReset());
             }
             else if (aiCard == "Paper")
             {
                 Debug.Log(aiCard);
                 AIPoints++;
-                resetPhases();
-                //StartCoroutine(dramaticPauseReset());
+                //resetPhases();
+                StartCoroutine(dramaticPauseReset());
             }
             else if (aiCard == "Scissors")
             {
                 Debug.Log(aiCard);
                 playerPoints++;
-                resetPhases();
-                //StartCoroutine(dramaticPauseReset());
+                //resetPhases();
+                StartCoroutine(dramaticPauseReset());
             }
 
         }
@@ -372,21 +377,21 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log(aiCard);
                 AIPoints++;
-                resetPhases();
-                //StartCoroutine(dramaticPauseReset());
+                //resetPhases();
+                StartCoroutine(dramaticPauseReset());
             }
             else if (aiCard == "Paper")
             {
                 Debug.Log(aiCard);
-                resetPhases();
-                //StartCoroutine(dramaticPauseReset());
+                //resetPhases();
+                StartCoroutine(dramaticPauseReset());
             }
             else if (aiCard == "Scissors")
             {
                 Debug.Log(aiCard);
                 playerPoints++;
-                resetPhases();
-                //StartCoroutine(dramaticPauseReset());
+                //resetPhases();
+                StartCoroutine(dramaticPauseReset());
             }
         }
         else if (pCard == "Scissors")
@@ -398,7 +403,7 @@ public class GameManager : MonoBehaviour
                 resetPhases();
 //                StartCoroutine(dramaticPauseReset());
             }
-            else if (aiCard == "Rock")
+            else if (aiCard == "Paper")
             {
                 Debug.Log(aiCard);
                 playerPoints++;
@@ -417,17 +422,25 @@ public class GameManager : MonoBehaviour
 
     IEnumerator dramaticPauseReset()
     {
+
+
         yield return new WaitForSeconds(1f);
         resetPhases();
+
         Debug.Log("dramatic pause reset");
     }
 
     void resetPhases()
     {
+        //add points
+        aiScoreText.text = AIPoints.ToString();
+        pScoreText.text = playerPoints.ToString();
+
+
         //reset showdown cards 
 
-        Debug.Log(AIShowdownCard.transform.name  + " AI Showdown Card anme");
-        Debug.Log(PlayerShowdownCard.transform.name + " player Showdown Card anme");
+        //Debug.Log(AIShowdownCard.transform.name  + " AI Showdown Card anme");
+        //Debug.Log(PlayerShowdownCard.transform.name + " player Showdown Card anme");
 
         AIShowdownCard = null;
         PlayerShowdownCard = null;
@@ -457,6 +470,7 @@ public class GameManager : MonoBehaviour
         {
             int lastnum = aiList.Count;
             GameObject currentCard = aiList[lastnum - i];
+            currentCard.GetComponent<Card>().setFlipped(true);
 
             currentCard.transform.parent = garbagePile;
 
@@ -511,7 +525,7 @@ public class GameManager : MonoBehaviour
             GameObject currentCard = aiList[lastnum - i];
             aiList.Remove(currentCard);
             garbageList.Add(currentCard);
-            Debug.Log("Current Card AI Removed" + (lastnum - i));
+            //Debug.Log("Current Card AI Removed" + (lastnum - i));
         }
 
         //check the amount of cards left in the deck

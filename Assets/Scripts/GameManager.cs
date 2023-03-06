@@ -400,22 +400,22 @@ public class GameManager : MonoBehaviour
             {
                 Debug.Log(aiCard);
                 AIPoints++;
-                resetPhases();
-//                StartCoroutine(dramaticPauseReset());
+                //resetPhases();
+                StartCoroutine(dramaticPauseReset());
             }
             else if (aiCard == "Paper")
             {
                 Debug.Log(aiCard);
                 playerPoints++;
-                resetPhases();
+                //resetPhases();
 
-                //StartCoroutine(dramaticPauseReset());
+                StartCoroutine(dramaticPauseReset());
             }
             else if (aiCard == "Scissors")
             {
                 Debug.Log(aiCard);
                 resetPhases();
-                //StartCoroutine(dramaticPauseReset());
+                StartCoroutine(dramaticPauseReset());
             }
         }
     }
